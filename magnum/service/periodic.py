@@ -138,10 +138,18 @@ class ClusterHealthUpdateJob(object):
             return
 
         if monitor.data.get('health_status'):
+            old_health_status = self.cluster.health_status
             self.cluster.health_status = monitor.data.get('health_status')
             self.cluster.health_status_reason = monitor.data.get(
                 'health_status_reason')
-            self.cluster.save()
+            LOG.debug("Cluster %s health status changing from %s to %s, saving to database",
+                      self.cluster.uuid, old_health_status, self.cluster.health_status)
+            try:
+                self.cluster.save()
+                LOG.debug("Cluster %s health status saved successfully", self.cluster.uuid)
+            except Exception as e:
+                LOG.error("Failed to save health status for cluster %s: %s",
+                          self.cluster.uuid, e, exc_info=True)
 
     def update_health_status(self):
         LOG.debug("Updating health status for cluster %s", self.cluster.uuid)

@@ -189,7 +189,7 @@ class ClusterTemplate(base.MagnumPersistentObject, base.MagnumObject,
 
         """
         values = self.obj_get_changes()
-        db_cluster_template = self.dbapi.create_cluster_template(values)
+        db_cluster_template = self.dbapi.create_cluster_template(values, context=context or self._context)
         self._from_db_object(self, db_cluster_template)
 
     @base.remotable

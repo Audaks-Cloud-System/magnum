@@ -344,10 +344,41 @@ class Connection(api.Connection):
                                sort_key, sort_dir, query)
 
     @oslo_db_api.retry_on_deadlock
-    def create_cluster_template(self, values):
+    def create_cluster_template(self, values, context=None):
         # ensure defaults are present for new ClusterTemplates
         if not values.get('uuid'):
             values['uuid'] = uuidutils.generate_uuid()
+
+        # Convert flavor ID to name if needed
+        if context:
+            osc = clients.OpenStackClients(context)
+            nova_client = osc.nova()
+            
+            # Handle flavor_id
+            if values.get('flavor_id'):
+                flavor_id = values['flavor_id']
+                try:
+                    # Try to get flavor by ID
+                    flavor = nova_client.flavors.get(flavor_id)
+                    # If successful and it was an ID, replace with name
+                    if flavor.id == flavor_id:
+                        values['flavor_id'] = flavor.name
+                except Exception:
+                    # If it fails, assume it's already a name
+                    pass
+            
+            # Handle master_flavor_id
+            if values.get('master_flavor_id'):
+                master_flavor_id = values['master_flavor_id']
+                try:
+                    # Try to get flavor by ID
+                    flavor = nova_client.flavors.get(master_flavor_id)
+                    # If successful and it was an ID, replace with name
+                    if flavor.id == master_flavor_id:
+                        values['master_flavor_id'] = flavor.name
+                except Exception:
+                    # If it fails, assume it's already a name
+                    pass
 
         cluster_template = models.ClusterTemplate()
         cluster_template.update(values)
@@ -445,16 +476,47 @@ class Connection(api.Connection):
 
             query.delete()
 
-    def update_cluster_template(self, cluster_template_id, values):
+    def update_cluster_template(self, cluster_template_id, values, context=None):
         # NOTE(dtantsur): this can lead to very strange errors
         if 'uuid' in values:
             msg = _("Cannot overwrite UUID for an existing ClusterTemplate.")
             raise exception.InvalidParameterValue(err=msg)
 
-        return self._do_update_cluster_template(cluster_template_id, values)
+        return self._do_update_cluster_template(cluster_template_id, values, context=None)
 
     @oslo_db_api.retry_on_deadlock
-    def _do_update_cluster_template(self, cluster_template_id, values):
+    def _do_update_cluster_template(self, cluster_template_id, values, context=None):
+        # Convert flavor ID to name if needed
+        if context:
+            osc = clients.OpenStackClients(context)
+            nova_client = osc.nova()
+            
+            # Handle flavor_id
+            if 'flavor_id' in values and values['flavor_id']:
+                flavor_id = values['flavor_id']
+                try:
+                    # Try to get flavor by ID
+                    flavor = nova_client.flavors.get(flavor_id)
+                    # If successful and it was an ID, replace with name
+                    if flavor.id == flavor_id:
+                        values['flavor_id'] = flavor.name
+                except Exception:
+                    # If it fails, assume it's already a name
+                    pass
+            
+            # Handle master_flavor_id
+            if 'master_flavor_id' in values and values['master_flavor_id']:
+                master_flavor_id = values['master_flavor_id']
+                try:
+                    # Try to get flavor by ID
+                    flavor = nova_client.flavors.get(master_flavor_id)
+                    # If successful and it was an ID, replace with name
+                    if flavor.id == master_flavor_id:
+                        values['master_flavor_id'] = flavor.name
+                except Exception:
+                    # If it fails, assume it's already a name
+                    pass
+                
         with _session_for_write() as session:
             query = session.query(models.ClusterTemplate)
             query = add_identity_filter(query, cluster_template_id)

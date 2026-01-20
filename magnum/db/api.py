@@ -163,9 +163,10 @@ class Connection(object, metaclass=abc.ABCMeta):
         """
 
     @abc.abstractmethod
-    def create_cluster_template(self, values):
+    def create_cluster_template(self, values, context=None):
         """Create a new ClusterTemplate.
-
+        
+        :param context: The security context for OpenStack API calls.
         :param values: A dict containing several items used to identify
                        and track the ClusterTemplate, and several dicts which
                        are passed into the Drivers when managing this
@@ -217,9 +218,11 @@ class Connection(object, metaclass=abc.ABCMeta):
         """
 
     @abc.abstractmethod
-    def update_cluster_template(self, cluster_template_id, values):
+    def update_cluster_template(self, cluster_template_id, values, context=None):
         """Update properties of a ClusterTemplate.
 
+        :param values: A dict of attributes to update.
+        :param context: The security context for OpenStack API calls.
         :param cluster_template_id: The id or uuid of a ClusterTemplate.
         :returns: A ClusterTemplate.
         :raises: ClusterTemplateNotFound

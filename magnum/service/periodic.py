@@ -221,9 +221,17 @@ class MagnumPeriodicTasks(periodic_task.PeriodicTasks):
         try:
             LOG.debug('Starting to sync up cluster health status')
 
-            status = [objects.fields.ClusterStatus.CREATE_COMPLETE,
-                      objects.fields.ClusterStatus.UPDATE_COMPLETE,
+            # Audaks: also sync health while clusters are being created,
+            # updated or deleted, and after a failure, so CAPI clusters
+            # report a real health status in every state.
+            status = [objects.fields.ClusterStatus.CREATE_IN_PROGRESS,
+                      objects.fields.ClusterStatus.CREATE_FAILED,
+                      objects.fields.ClusterStatus.CREATE_COMPLETE,
                       objects.fields.ClusterStatus.UPDATE_IN_PROGRESS,
+                      objects.fields.ClusterStatus.UPDATE_COMPLETE,
+                      objects.fields.ClusterStatus.UPDATE_FAILED,
+                      objects.fields.ClusterStatus.DELETE_IN_PROGRESS,
+                      objects.fields.ClusterStatus.DELETE_FAILED,
                       objects.fields.ClusterStatus.ROLLBACK_IN_PROGRESS]
             filters = {'status': status}
             clusters = objects.Cluster.list(ctx, filters=filters)

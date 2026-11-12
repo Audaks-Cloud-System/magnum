@@ -86,7 +86,11 @@ class Cluster(base.APIBase):
     node_count = wsme.wsattr(wtypes.IntegerType(minimum=0), default=1)
     """The node count for this cluster. Default to 1 if not set"""
 
-    master_count = wsme.wsattr(wtypes.IntegerType(minimum=1), default=1)
+    # minimum=0: master_count is computed from the master nodegroups, and the
+    # periodic task deletes them before the cluster row, so for a moment a
+    # listed cluster has 0 masters and minimum=1 made the whole list fail
+    # with HTTP 400. Creating with 0 is still refused in validate_master_count.
+    master_count = wsme.wsattr(wtypes.IntegerType(minimum=0), default=1)
     """The number of master nodes for this cluster. Default to 1 if not set"""
 
     docker_volume_size = wtypes.IntegerType(minimum=1)

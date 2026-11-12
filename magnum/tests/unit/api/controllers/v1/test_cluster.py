@@ -91,6 +91,16 @@ class TestListCluster(api_base.FunctionalTest):
         self.assertEqual(cluster.uuid, response['uuid'])
         self._verify_attrs(self._expand_cluster_attrs, response)
 
+    def test_get_all_cluster_without_master_nodegroup(self):
+        # While a deleted cluster is cleaned up, its nodegroups are removed
+        # before the cluster row: master_count is 0 for a moment and the
+        # list must still work.
+        cluster = obj_utils.create_test_cluster(self.context)
+        cluster.default_ng_master.destroy()
+        response = self.get_json('/clusters')
+        self.assertEqual(cluster.uuid, response['clusters'][0]['uuid'])
+        self.assertEqual(0, response['clusters'][0]['master_count'])
+
     def test_get_one_failed_cluster(self):
         cluster = obj_utils.create_test_cluster(self.context,
                                                 status='CREATE_FAILED',
